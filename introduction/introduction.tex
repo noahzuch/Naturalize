@@ -1,0 +1,27 @@
+% 1: Programing series of choices
+% how to decompose problem into subproblems and fine grained how to name identifiers
+% Naming improves the readability and cleanness of the code. This increases the maintainability ( 80% of time)
+To program is to subdivide a complex problem hierarchically into smaller ones until at each level the problem is easily solvable. This ranges from dividing a program into micro-services to splitting up a complex method into multiple easier-to-understand parts.
+%At every step of this subdivision the developer has think about how exactly the problem can be split up optimally.
+An important goal is to make these subdivisions clear and understandable for future developers. Here a key principle is the explanatory naming of identifiers. This improves the readability and cleanness of the code and makes a program more maintainable. But correctly naming a given identifier be it a variable, a method, or a class is made difficult, because each development team and project has its own, maybe undocumented, rules for naming. To tackle this problem Allamins et al.~\cite{naturalize} introduced Naturalize, a tool that can learn naming and formatting conventions from a given source set and suggest names / formatting to the developer which are in line with the rest of the project. Internally Naturalize uses N-gram models to obtain an understanding of when which identifier name should be used. Eventthough Naturalize acchieves an accuracy of 94\% in its top suggestions for identifier names, there are a few areas where further research is required.
+
+First, Naturalize uses Katz smoothing~\cite{naturalize} for its N-gram model, but without any explanation as to why. In another work, Hellendorn et al.~\cite{nestedngram} used nested N-grams together with deep learning to build a fast responding and nested modeling kit for programming languages. Their evaluations indicate that \texttt{JM} smoothing is the superior smoothing technique for modelling source code. Unfortunately Katz Smoohting was not part of their evaluation. This paper therefore tries to answer the following research question:
+
+\begin{resquest}[RQ~\ref{hyp:jmsmoothing}] \label{hyp:jmsmoothing}
+Does the usage of J-M Smoothing instead of Katz-Smoothing improve the accuracy of Naturalize?
+\end{resquest}
+
+Second, Naturalizes suggestions may be strongly biased. From manual investigation one can see, that for local variables, parameters, or fields Naturalize tends to rank the type-name of the variable (in lowercases) the highest. The same can be seen for methods, where Naturalize often suggest simple getter method names. A probable cause of this may be the close proximity of the variable name and type name in the java language, which enables the N-gram model to connect the to-be suggested identifier with other identifiers of the same type. Though this behaviour may be beneficial in some situations, an identifier name should probably convey more information than only its type. Like for which purpose a variable is created. Formed as a research questions this paper aims to answer:
+
+\begin{resquest}[RQ~\ref{hyp:typeommitance}] \label{hyp:typeommitance}
+How much impact does the type information in the code have on the suggestion accuracy of Naturalize?
+\end{resquest}
+
+Finally this paper discusses some significant inconsistencies between the evaluation described by Allamanis et al.~\cite{naturalize} and the associated source code on GitHub. More specifically this inconsitency lies in the fact that the explained evaluation strategy is simply not supported by the design of Naturalize. Probably of this reason a different approach is implemented in the source code.
+
+\subsection{Contributions}
+\begin{itemize}
+    \item Investigating if Naturalize relies heavily on the existence of type names in the source code
+    \item Modifying Naturalize to use JM Smoothing, which may improve accuracy
+    \item Uncovering some inconsistencies in the evaluation of Naturalize
+\end{itemize}
