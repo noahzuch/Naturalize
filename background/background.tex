@@ -4,7 +4,7 @@ The goal of their work was to automatically infer coding conventions out of some
 and then give suggestions to the programmer to better adhere to the found conventions.
 They limited their scope to the naming of identifiers and code formatting. 
 As this paper focuses on the naming part, the code formatting is excluded in this summary. 
-The central concept of Naturalize is to use the well-known N-gram model to learn naming conventions from a given source set.Later this model can be used to suggest alternative names for a given identifier, where these alternatives are more in line with the trained model. 
+The central concept of Naturalize is to use the well-known N-gram model to learn naming conventions from a given source set. Later this model can be used to suggest better alternative names for identifiers, which are more in line with the trained model. 
 \begin{figure}
     \centering
     \graphicspath{{resources/}}  
@@ -18,14 +18,14 @@ In the learning phase, the tool converts a set of source files into token stream
 Java language definition and builds an N-gram model with them. Their findings indicate that a model of
 order five is well suited.
 
-After training Naturalize can now suggest alternative names given an identifier. The workflow for this suggestion task is shown in Figure~\ref{fig:back_nat_workflow}.
+After training Naturalize can now suggest alternative names for an identifier. The workflow for this suggestion task is shown in Figure~\ref{fig:back_nat_workflow}.
 It starts with a request containing the identifier which should be renamed.
 The intuitive idea behind Naturalize is that the name of an identifier depends on the code locations where the identifier is assigned or used. To be able to find those occurrences the initial request contains the AST node of the identifier in the Abstract Syntax Tree
-of the current file. This allows Naturalize to find a parent node higher up in the tree, which encompasses all (local) occurrences of the identifier. For example, if the identifier is a local variable, the AstNode representing the method, where the variable is defined, gets used as a parent. Then a code snippet is created, which simply contains the complete textual content of the parent node. This would, in the example above, be the signature and body of the defining method. It is important to mention that Naturalize, at least at the time this paper is being written,
-does not include occurrences of identifiers outside of the current class. Now the N-gram model can be used to assign a probability to this code snippet indicating how in line this snippet is with the rest of the project.
+of the current file. This allows Naturalize to find a parent node higher up in the tree, which encompasses all (local) occurrences of the identifier. For example, if the identifier is a local variable, the parent node is the AstNode representing the method, where the variable is defined. Then a code snippet is created, which simply contains the complete textual content of the parent node. This would, in the example above, be the signature and body of the defining method. It is important to mention that Naturalize, at least at the time this paper is being written,
+does not include occurrences of identifiers outside of the current class. Now the N-gram model can be used to assign a probability to this code snippet indicating how in line this snippet, and therefore the identifier, is with the rest of the project.
 
-The next step is that the Proposer has to find alternative names for the identifier. For this, the N-gram model is used. The code snippet is scanned and each n-gram, meaning each sub-snippet containing N words, that contains an occurrence of the identifier is extracted. Then the model is checked if it contains N-grams, which are similar to the extracted ones. Similar here means, that the N-gram only differs at the place, where the occurrence of the identifier is present. At this place the similar N-gram contains another identifier. These are then used as the candidates for the suggestion. Corresponding code snippets for each candidate can be generated from the original one, by simply replacing the original name with the candidate name. As a last step the scoring function ranks and filters the candidates. This is done by assigning a score to each candidate snippet using the N-gram model.
-For filtering a threshold $t$ is introduced. This threshold controls which candidate should be kept by looking at its score. Only those candidates with
+The next step is that the Proposer has to find alternative names for the identifier. For this, the N-gram model is used. The code snippet is scanned and each n-gram, meaning each sub-snippet containing N words, that contains an occurrence of the identifier is extracted. Then the model is checked if it contains N-grams, which are similar to the extracted ones. Similar here means, that the N-gram only differs at the place, where the occurrence of the identifier is present. At this place the similar N-gram contains another identifier. These other identifiers are then used as the candidates for the suggestion. Corresponding code snippets for each candidate can be generated from the original one, by simply replacing the original name with the candidate name. As a last step the scoring function ranks and filters the candidates. This is done by assigning a score to each candidate snippet using the N-gram model.
+For filtering a threshold $t$ is introduced. This threshold controls which candidate should be kept by looking at their scores. Only those candidates with
 a score greater than at least $t$ in comparison to the original name should be kept. The filtering also includes a parameter $k$, where only the top-$k$ suggestions are kept to not overburden the user with too many suggestions. The final list of suggestions is then presented to the user.
 
 Some details which are not important for this paper were left out of this summary. For example how
@@ -40,7 +40,7 @@ where $C(w_1^n)$ is the number of times the sequence $w_1^n$ is present in the t
 This simple equation, called the \emph{maximum likelihood} estimate, does not work well, as it assigns a zero score to N-grams that do not occur in the training set. These N-grams should obviously have a probability higher than zero. To solve this problem different smoothing methods can be applied~\cite{smoothingStudy}.
 
 \subsubsection{Katz Smoothing}
-Katz smoothing is one of the simplest smoothing techniques. The basic idea is to use a lower n-gram model (meaning a lower value of n) if the full n-gram occurs less than a given threshold $k$ times in the training set. This is repeated until a low enough n-gram model is found~\cite{katz1987estimation}. As an equation it can be written as:
+Katz smoothing is one of the simplest smoothing techniques. The basic idea is to use a lower order n-gram model (meaning a lower value of n) if the full n-gram occurs less than a given threshold $k$ times in the training set. This is repeated until a low enough n-gram model is found~\cite{katz1987estimation}. As an equation it can be written as:
 \begin{equation}
     P(w_n | w_1^{n-1}) = 
     \begin{dcases}
@@ -55,4 +55,4 @@ Jelinek and Mercer smoothing (JM smoothing) also uses lower-order models to comp
     P(w_n | w_1^{n-1})=\lambda_{w_1^{n-1}}\frac{C(w_1^n)}{C(w_1^{n-1})} + (1-\lambda_{w_1^{n-1}})P(w_n | w_2^{n-1})
 \end{equation}
 Again $\lambda_{w_1^{n-1}}$ are pretrained values. As computing a different value for each $\lambda$ would be to expensive, these values are partitioned into buckets according to $C(w_1^{n-1})$. Every $\lambda_{w_1^{n-1}}$ with the same count is then constrained to have the same value.
-Comparing these two methods the main difference between Katz and JM smoothing is then, that Katz smoothing stops at the first order, where the calculated probability is greater than zero, but JM continues to include lower-order models.
+Comparing these two methods the main difference between Katz and JM smoothing is that Katz smoothing stops at the first order, where the calculated probability is greater than zero, but JM continues to include lower-order models.

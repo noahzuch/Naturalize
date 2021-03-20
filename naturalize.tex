@@ -160,7 +160,7 @@
 \begin{abstract}
   Programming languages allow for many diverse ways of solving the same problem. Some ways are considered bad practice and some follow coding conventions, found by practical experience. It should be in the best interest of every developer to follow such coding conventions if possible.
   %This is made hard by the fact that many projects declare new conventions or ignore existing ones.
-  An automatic way of informing the programmer, that some coding convention got overlook is a hot research topic and many different approaches are explored. One possible approach is realized in the Naturalize tool, which uses N-gram models to informs the user about two specific coding convention: Badly chosen identifier names and bad formatting. But this approach has a few problems this paper want's to investigate: 1. Naturalize uses a different smoothing technique than stated to be optimal for code-modelling by other researchers. 2. Naturalize may tend to rely strongly on the presence of type-names to infer identifier names. 3. The evaluation done in the paper associated with Naturalize contains some inconsistencies when compared to the explanation of how Naturalize works. Besides an in-depth look into these inconsistencies, the empirical results of this paper show that 1. the proposedly better smoothing technique performs worse than the original one in Naturalize and 2. when removing type names Naturalize struggles to achieve acceptable results.
+  An automatic way of informing the programmer, that some coding convention got overlooked is a hot research topic and many different approaches are explored. One possible approach is realized in the Naturalize tool, which uses N-gram models to informs the user about two specific coding convention: Badly chosen identifier names and bad formatting. But this approach has a few problems this paper want's to investigate: 1. Naturalize uses a different smoothing technique than stated to be optimal for code-modelling by other researchers. 2. Naturalize may tend to rely almost exclusively on the presence of type-names to infer identifier names. 3. The evaluation done in the paper associated with Naturalize contains some inconsistencies when compared to the explanation of how Naturalize works. Besides an in-depth look into these inconsistencies, the empirical results of this paper show that 1. the proposedly better smoothing technique performs worse than the original one in Naturalize and 2. when removing type names Naturalize struggles to achieve acceptable results.
 \end{abstract}
 
 %%
@@ -196,23 +196,20 @@
 \section{Background}
 \input{background/background}
 
-%\section{Methods}
-%\input{methods/methods}
-
 \section{Evaluation}
 \input{evaluation/evaluation}
 
 \section{Threats to validity}
 \input{threats_to_validity/Threats_to_validity}
 \section{Discussion}
-The results of the type name obfuscation are unexpectedly worse than the baseline. A drop in accuracy is expected as it makes sense, that a local N-gram model can use the type name of a variable to associate it with other variables of the same type. But a such severe drop indicates that Naturalize almost exclusively relies on the type names. This poses the concern,that Naturalize is not able to achieve even mildly acceptable results when applied to a dynamically typed language like JavaScript instead of Java.
+The results of the type name obfuscation are unexpectedly worse than the baseline. A drop in accuracy is expected as it makes sense, that a local N-gram model can use the type name of a variable to associate it with other variables of the same type. But a such severe drop indicates that Naturalize almost exclusively relies on the type names. This poses the concern, that Naturalize is not able to achieve even mildly acceptable results when applied to a dynamically typed language like JavaScript instead of Java. Eventhough stated in the paper, Naturalize is not out-of-the-box compatible with other programming languages. It would take some refactorings to be able to evaluate Naturalize on JavaScript, which is why it was left out of this paper.
 
 The comparison between the smoothing techniques, at least in Naturalize, showed that JM Smoothing can not improve the accuracy when compared to Katz smoothing. In fact it slightly decreases it. JM Smoothing was found to be the superior smoothing technique by Hellendorn et al.~\cite{nestedngram} for their nested language model. As they did not include Katz Smoothing in their survey the question arises if Katz smoothing may not only be beneficial in Naturalize but also in the nested language model of Hellendorn et al.
 
-This paper also uncovered some inconsistencies between the evaluation setup explained by Allamanis et al.~\cite{naturalize} and the actual evaluation code. These inconsistencies result from the fact that the evaluation as explained in the paper is not compatible with the designed functionality of Naturalize. A better evaluation setup may be to rename all occurences of the identifier for which alternative names should be found. This renaming also has to include occurrence outside of the current file and the new name should be something obviously unnatural. Now the accuracy can be measured meaning how often Naturalize would suggest the original name before the refacoring. And also the suggestion frequency can be measured correctly as now Naturalize may not be able to suggest alternatives for the renamed junk name. This is also a lot closer to reality as the usage of a class in the rest of the project may tend to bias the model to prefer the current name over an alternative.
+This paper also uncovered some inconsistencies between the evaluation setup explained by Allamanis et al.~\cite{naturalize} and the actual evaluation code. These inconsistencies arise from the fact that the evaluation as explained in the paper is not compatible with the designed functionality of Naturalize. A better evaluation setup may be to rename all occurences of the identifier before asking Naturalize to make suggestion. This renaming also should include occurrence outside of the current file and the new name should be something obviously unnatural. Now the actual accuracy can be measured meaning how often Naturalize would suggest the original name present before the refacoring. And also the suggestion frequency can be measured correctly as now Naturalize may not be able to suggest alternatives for the renamed junk name. This is also a lot closer to reality as the usage of a class in the rest of the project may tend to bias the model to prefer the current name over an alternative.
 \section{Related work}
 
-\section{Summary}
+\section{Conclusion}
 \input{summary/summary}
 
 
