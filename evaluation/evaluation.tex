@@ -1,4 +1,4 @@
-The evaluation is build on top of the one done by Allamanis et al.~\cite{naturalize} in the original paper. At first, the test setup of the original authors is explained. Here the mentioned inconsistencies between the paper and the actual evaluation will be discussed. Then the results of a simple reevaluation of the test setup in the Github code will be presented. This reevaluation is to make sure, that my local setup results in the same values as in the original paper and also serves a baseline metric to answer the stated research questions. This baseline is especially important when considering the inconsistencies between the paper and the actual evaluation. Finally, the two research questions are answered.
+The evaluation is built on top of the one done by Allamanis et al.~\cite{naturalize} in the original paper. At first, the test setup of the original authors is explained. Here the mentioned inconsistencies between the paper and the actual evaluation will be discussed. Then the result of a simple reevaluation of the test setup in the GitHub code will be presented. This reevaluation is to make sure, that my local setup results in the same values as in the original paper and also serves as a baseline metric to answer the stated research questions. This baseline is especially important when considering the inconsistencies between the paper and the actual evaluation. Finally, the two research questions are answered.
 
 \subsection{Methodology}
 The corpus for evaluation is copied from the original paper. It is a set of well-known open-source java
@@ -37,7 +37,7 @@ ambiguous in the original paper. Some projects are divided into subprojects via 
 To get a baseline for the other evaluations and to validate, that my setup results in the same values found
 by the original authors, their evaluation is rerun. The focus here lies on the \emph{Single Point Suggestion},
 where Naturalize is asked to find alternative names for a single identifier. Thankfully the authors provided
-their code for the evaluation setup.
+their code for the evaluation setup online.
 
 \subsubsection{Test-Setup in the Paper}
 The explanation of their evaluation in the paper is as follows~\cite{naturalize}:
@@ -50,24 +50,35 @@ filtered out. This leads to having only suggestions of high accuracy but may per
 any suggestions at all if no considerably better alternative is found. A low value of $t$ on the other hand results in
 more suggestions of possibly worse accuracy.
 The ratio of identifiers, where Naturalize is capable of finding an alternative, is called the suggestion frequency.
-The results are then plotted into a 2d plot with suggestion frequency as the x-axis and suggestion accuracy as the y-axis. Such a plot is similar to a precision-recall curve, where values at the top right corner of the graph are better.
+The results are then plotted into a 2D plot with suggestion frequency as the x-axis and suggestion accuracy as the y-axis. Such a plot is similar to a precision-recall curve, where values at the top right corner of the graph are better.
 
 \subsubsection{Problem with the setup}
-After looking in-depth into the evaluation logic provided on Github, it is clear that the original authors used a different setup in their evaluation code as stated in
-the paper. 
-
-This difference is caused by the problem, that the evaluation expects the original name as a topmost candidate. Naturalize is not designed to support that. If the original name would be the top suggestion, every other suggestion would have been filtered out. Exactly in this case Naturalize is configured to not make a suggestion at all as no better alternative can be found. This contradicts the expectation of having the original name as the top suggestion. But let's assume that an empty suggestion list is counted as if Naturalize would have suggested the original name. Then this results in Naturalize beeing able to always find an alternative name and therefore the suggestion frequency has to be 100\% for any value of $t$. This is due to the fact that the frequency only drops in the above-mentioned case, where no \emph{other} alternative name is found. But this is now counted as if the original name is the suggestion. Now Naturalize can always suggest an alternative, sometimes another name other-times the original name. But the results of the original paper show, that they get suggestion frequencies below 100\% which contradicts the explanation of their setup.
+After looking more closely at the evaluation setup and the way Naturalize is expected to work, the evaluation explained above can not be applied to Naturalize.
+This lies in the fact, that the evaluation expects the original name as a topmost candidate. Naturalize is not designed to support that. If the original name would be the top suggestion, every other suggestion would have been filtered out. It is important to mention, that the original name never gets filtered out by the Scoring Function. Exactly in this case Naturalize is configured to not make a suggestion at all as no better alternative can be found. This contradicts the expectation of having the original name as the top suggestion. But let's assume that an empty suggestion list is counted as if Naturalize would have suggested the original name. Then this results in Naturalize being able to \emph{always} find an alternative name and therefore the suggestion frequency has to be 100\% for any value of $t$. This is due to the fact that the frequency only drops in the above-mentioned case, where no \emph{other} alternative name is found. But this is now counted as if the original name is the suggestion. Now Naturalize can always suggest an alternative, sometimes another name other-times the original name. But the results of the original paper show, that they get suggestion frequencies below 100\% which contradicts the explanation of their setup.
 
 This already implies that they use a different setup than stated, and the setup in the source code enforces this claim. The actual setup is as follows:
 For every renaming of an identifier the raw, unfiltered, suggestion list is returned and sorted by its score from lowest to highest. It is important to mention that the score is of log probability so lower values are considered to be better. If the original name in the suggestion list has a score below or equal to the defined threshold $t$ it is counted as if Naturalize could give a suggestion. Notice that $t$ is now used as an absolute and not like designed as a relative threshold and it is applied to the original snippet and not to the other alternatives. Only if the original name passes this check, the accuracy gets evaluated. But this is also different from the paper. It is now checked, if the original name is under the top one / top five candidates of the unfiltered list, so without using the threshold $t$. In summary, the actual evaluation done in the source code differs substantially from the explanation in the paper. 
 
-\subsubsection{Results}
+\subsubsection{Reevaluation results}
 \input{evaluation/reevaluation_figure}
 The result of the evaluation-rerun is presented in Figure~\ref{fig:eval_reeval_fig}.
 As explained in the setup, each graph has on the y-axis the suggestion accuracy and on the x-axis the suggestion frequency. The result got split up into variables (meaning fields, parameters, and local variables), methods, and types (classes, enums, interfaces). Comparing the graphs with the ones in the original paper, one can see that the rerun produced roughly the same values indicating that the testing setup for the reevaluation is the same as the one originally used. 
 
+\subsection{JM Smoothing (RQ~\ref{hyp:jmsmoothing})}
+\input{evaluation/jmsmoothing_figure}
+This research question is about which smoothing technique is best suited for the N-gram model in Naturalize. Specifically, Katz Smoothing and JM Smoothing are compared.
+
+For JM Smoothing the values $\lambda_{w_1^{n-1}}$ have to be precomputed. Hellendorn et al.~\cite{nestedngram} set these to always be $0.5$. So no matter which n-gram order, the maximum likelihood of the current order has the same weight as the result of the lower order model. Why these specific parameter values are used is not justified. Assuming this the configuration was chosen for a reason this configuration is kept for the evaluation. Figure~\ref{fig:eval_JM_fig} presents the results when replacing Katz Smoothing in Naturalize with the JM Smoothing approach. When comparing the graphs with the baseline in Figure~\ref{fig:eval_reeval_fig} no big difference can be observed. JM Smoothing tends to have a smaller inner quartile range, indicating more consistent results over different projects. On the other side, the average accuracy of Katz Smoothing tends to be slightly higher than JM Smoothing.
+
+\noindent\fbox{\parbox{\linewidth}{%
+\begin{resquest*}[RQ~\ref{hyp:jmsmoothing}]
+Does the usage of JM Smoothing instead of Katz-Smoothing improve the accuracy of Naturalize?
+\end{resquest*}
+JM Smoothing does not produce a significantly better result in Naturalize than Katz Smoothing. It actually decreases the achieved accuracy by a slight amount.
+}}
+
 \subsection{Impact of type names (RQ~\ref{hyp:typeommitance})}
-This research question is concerned with the possibility that Naturalize relies heavily on the presence of type names in the code to give suggestions and is less suited to deduce identifier names from a more complex context.
+The second research question is concerned with the possibility that Naturalize relies heavily on the presence of type names in the code to give suggestions and is less suited to deduce identifier names in the case where no type names are present.
 \input{evaluation/obfuscate_figure}
 \subsubsection{Experimental Setup}
 To answer this research question, Naturalize is modified to replace or remove concrete type names when reading the content of source files. More specifically type names are ignored/replaced in the training phase when creating a token stream and in the suggestion phase when creating the code snippet for suggestions. Therefore if the baseline evaluation is rerun with these modifications, the N-gram model is forced to rely on contexts other than the type name.
@@ -100,13 +111,13 @@ public getFromString(final var file,
     \label{fig:meth_javacode}
 \end{figure}
 
-The idea is to change the Java-syntax of a source file in a way that it more mimics untyped languages. Figure~\ref{fig:meth_javacode} shows an example of an original and its modified java code. More precisely a source file/code snippet is modified in the following ways:
+The idea is to change the Java-syntax of a source file in a way that more mimics untyped languages. Figure~\ref{fig:meth_javacode} shows an example of an original and its modified java code. More precisely a source file / code snippet is modified in the following ways:
 
 \begin{itemize}
-    \item Variable/Field/Parameter declarations \texttt{<Type> <variableName>} get replaced with \texttt{var <variableName>}. This mimics in a sense the new Java 10 syntax.
-    \item The Return type of methods get removed.
+    \item At Variable/Field/Parameter declarations (e.g. \texttt{String name;}) the type name gets replaced with the keyword\texttt{var} (e.g. \texttt{var name}). This mimics in a sense the new Java 10 syntax.
+    \item The Return type of methods gets removed.
     \item All type arguments, e.g. generics, get removed.
-    \item Object-Creation via \texttt{new <Type>(<parameters>)} is \emph{not} modified. There is no general rule to remove type information in an object's creation but still keep the semantics of the code. This is because object-oriented and strictly typed programming languages differ a great amount in the creation of structures to other languages.
+    \item Object-Creation via the \texttt{new} keyword is \emph{not} modified. There is no general rule to remove type information in an object's creation but still keep the semantics of the code. This is because object-oriented and strictly typed programming languages differ a great amount in the creation of structures to other languages.
     \item Other occurrences of Type-Names stay as they are. These include:
     \begin{itemize}
         \item Class/Interface/Enum-Declaration
@@ -116,26 +127,13 @@ The idea is to change the Java-syntax of a source file in a way that it more mim
     These again can not be removed because such type names are still required to keep the semantics of the program.
 \end{itemize}
 
-To implement this modification of source code in Naturalize, the Abstract Syntax Tree functionality of the Eclipse JDT library~\cite{todo} is used. This library contains multiple classes which can print out source code for a given AST node. This class can then be modified to allow the above-mentioned modifications when printing out the code. In the training phase, Naturalize simply reads the content of each java file. With the modifications an AST is created from each file and printed back as a String including the obfuscations. As a code-snippet for suggestion in Naturalize always consists of the content of exactly one AST node~\cite{naturalize}, this procedure can be directly adopted for code snippets.
+To implement this modification of source code in Naturalize, the Abstract Syntax Tree functionality of the Eclipse JDT library is used. This library contains multiple classes which can print out source code for a given AST node. This class can be modified to allow the above-mentioned modifications when printing out the code. In the training phase, Naturalize simply reads the content of each java file. After the modifications, an AST is created from each file and printed back as a String including the obfuscations. As a code-snippet for suggestion in Naturalize always consists of the content of exactly one AST node~\cite{naturalize}, this procedure can be directly adopted for code snippets.
 
 \subsubsection{Results}
-Figure~\ref{fig:eval_obfuscate_fig} shows the observed results when enabling the obfuscation of the type names in the code. For variable names explicitly the presumed behaviour was that removing type names from the source code significantly decreases the accuracy Naturalize can achieve. Looking at the results this assumption is confirmed as even for $k=5$ the accuracy already drops below 70\% at a frequency of only around 10\%. Comparing this with the results of the unobfuscated run, where the accuracy does not drop below 70\% even for $k=1$ and a frequency of over 70\%, a very big difference can be seen. For completeness also the results for type names and method names have been measured. A significant drop of the accuracy of type names is not unexpected, as exactly these type names got obfuscated. But also interestingly the accuracy for method names drops significantly compared to the normal evaluation. Here the accuracy drops below 70\% for $k=5$ at a frequency of only 16\%. This indicates that also the suggestion of method names relies strongly on type names. In this case probably on the return type and parameter type.
+Figure~\ref{fig:eval_obfuscate_fig} shows the observed results when enabling the obfuscation of the type names in the code. For variable names explicitly the presumed behavior was that removing type names from the source code significantly decreases the accuracy Naturalize can achieve. Looking at the results this assumption is confirmed as even for $k=5$ the accuracy already drops below 70\% at a frequency of only around 10\%. Comparing this with the results of the unobfuscated run, where the accuracy does not drop below 70\% even for $k=1$ and a frequency of over 70\%, a very big difference can be seen. The accuracy for method names also drops significantly compared to the normal evaluation. Here the accuracy drops below 70\% for $k=5$ at a frequency of only 16\%. This indicates that also the suggestion of method names relies strongly on type names. In this case probably on the return type and parameter type.
 \noindent\fbox{\parbox{\linewidth}{%
 \begin{resquest*}[RQ~\ref{hyp:typeommitance}]
-Can Naturalize still acchieve good accuracy when no type names are present.
+Can Naturalize still achieve good accuracy when no type names are present in the source code?
 \end{resquest*}
 Naturalize relies heavily on the existence of type names to a point that removing only the type names from the source files produces a severely worse result.
-}}
-
-
-\subsection{JM Smoothing (RQ~\ref{hyp:jmsmoothing})}
-\input{evaluation/jmsmoothing_figure}
-The second research question is about which smoothing techniques, recommended by different researches, is best suited for the N-gram model in Naturalize. Specifically Katz Smoothing and JM Smoothing are compared.
-
-For JM smoothing the values $\lambda_{w_1^{n-1}}$ have to be precomputed. Hellendorn et al.~\cite{nestedngram} set these to always be $0.5$. So no matter which n-gram order, the maximum likelihood of the current order has the same weight as the result of the lower order model. Why these specific parameter values are used is not justified. Assuming that the configuration $\lambda_{w_1^{n-1}}=0.5$ was chosen for a reason this configuration is kept for the evaluation. Figure~\ref{fig:eval_JM_fig} presents the results when replacing Katz smoothing in Naturalize with the JM Smoothing approach. When comparing the graphs with the baseline in Figure~\ref{fig:eval_reeval_fig} no big difference can be observed. JM Smoothing tends to have a smaller inner quartile range, indicating more consistent results over different projects. On the other side the average accuracy of Katz Smoothing tends to be slightly higher than JM smoothing.
-\noindent\fbox{\parbox{\linewidth}{%
-\begin{resquest*}[RQ~\ref{hyp:jmsmoothing}]
-Does the usage of JM Smoothing instead of Katz-Smoothing improve the accuracy of Naturalize?
-\end{resquest*}
-JM Smoothing does not produce a significantly better result in Naturalize than Katz Smoothing. It actually decreases the achieved accuracy by a slight amount.
 }}
